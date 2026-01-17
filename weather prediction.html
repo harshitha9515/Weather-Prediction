@@ -1,0 +1,439 @@
+<!DOCTYPE html> 
+<html lang="en"> 
+<head>  
+  <meta charset="UTF-8">  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">  
+  <title>Weather Prediction</title>  
+  <style>    
+    body {      
+      margin: 0;      
+      font-family: "Poppins", sans-serif;      
+      background: #000;      
+      color: #fff;      
+      text-align: center;      
+      overflow-x: hidden;      
+      overflow-y: auto;    
+    }      
+
+    /* Particle Background Canvas */    
+    canvas#particles {      
+      position: fixed;      
+      top: 0; left: 0;      
+      width: 100%; height: 100%;      
+      z-index: -2;      
+      background: transparent;    
+    }      
+
+    /* Aurora Borealis Layer */    
+    .aurora {      
+      position: fixed;      
+      top: 0; left: 0;      
+      width: 100%; height: 100%;      
+      background: linear-gradient(270deg, #ff00ff, #00ffff, #00ff00, #ff0080);      
+      background-size: 600% 600%;      
+      animation: auroraMove 20s ease infinite;      
+      mix-blend-mode: screen;      
+      opacity: 0;      
+      z-index: -1;    
+    }    
+    @keyframes auroraMove {      
+      0%{background-position:0% 50%}      
+      50%{background-position:100% 50%}      
+      100%{background-position:0% 50%}    
+    }      
+
+    /* Lightning Flash */    
+    .flash {      
+      position: fixed;      
+      top: 0; left: 0;      
+      width: 100%; height: 100%;      
+      background: white;      
+      opacity: 0;      
+      z-index: 1000;      
+      pointer-events: none;    
+    }      
+
+    /* Default background image before search */    
+    .default-bg {      
+      position: fixed;      
+      top: 0; left: 0;      
+      width: 100%; height: 100%;      
+      background: url("4ed345cb-0771-4145-b2b7-6ab1818ec6d5.png") no-repeat center center / cover;      
+      z-index: -3;    
+    }    
+    .default-bg.hide {      
+      display: none;    
+    }
+
+    header { padding: 40px 20px; }    
+    h1 {      
+      font-size: 2.8rem;      
+      font-weight: bold;      
+      color: #00eaff;      
+      text-shadow: 0 0 20px #00eaff, 0 0 40px #00f2fe;    
+    }      
+
+    .typing {      
+      border-right: 2px solid #00eaff;      
+      white-space: nowrap;      
+      overflow: hidden;      
+      width: 0;      
+      animation: typing 6s steps(40, end) forwards, blink 0.7s infinite;      
+      display: inline-block;    
+    }    
+    @keyframes typing { from { width: 0; } to { width: 100%; } }    
+    @keyframes blink { 50% { border-color: transparent; } }      
+
+    .search-box {      
+      display: flex;      
+      justify-content: center;      
+      margin: 20px;      
+      position: relative;    
+    }    
+    input {      
+      padding: 12px;      
+      width: 280px;      
+      border: none;      
+      border-radius: 25px;      
+      outline: none;      
+      font-size: 1rem;      
+      background: #1a1a1a;      
+      color: #fff;      
+      box-shadow: 0 0 10px #00f2fe;    
+    }    
+    button {      
+      padding: 12px 20px;      
+      margin-left: 10px;      
+      border: none;      
+      border-radius: 25px;      
+      background: #111;      
+      color: #00f2fe;      
+      cursor: pointer;      
+      font-weight: bold;      
+      transition: 0.3s;      
+      box-shadow: 0 0 10px #00f2fe;    
+    }    
+    button:hover {      
+      background: #00f2fe;      
+      color: #111;      
+      box-shadow: 0 0 20px #00f2fe, 0 0 50px #00eaff;    
+    }      
+
+    #suggestions {      
+      position: absolute;      
+      top: 50px;      
+      left: 0;      
+      right: 0;      
+      background: #1a1a1a;      
+      border-radius: 10px;      
+      max-height: 180px;      
+      overflow-y: auto;      
+      z-index: 1000;      
+      box-shadow: 0 0 15px #00f2fe;    
+    }    
+    #suggestions div {      
+      padding: 10px;      
+      cursor: pointer;      
+      transition: background 0.3s;    
+    }    
+    #suggestions div:hover {      
+      background: #00f2fe;      
+      color: #111;    
+    }      
+
+    #result {      
+      margin: 30px auto;      
+      width: 360px;      
+      padding: 20px;      
+      background: rgba(10,10,10,0.85);      
+      border-radius: 15px;      
+      opacity: 0;      
+      transform: translateY(40px);      
+      transition: all 0.8s ease-in-out;      
+      box-shadow: 0 0 25px #00f2fe, 0 0 50px #00eaff;    
+    }    
+    #result.show { opacity: 1; transform: translateY(0); }      
+
+    #extra {      
+      margin-top: 15px;      
+      font-size: 0.95rem;      
+      line-height: 1.6;    
+    }      
+
+    .progress-bar {      
+      width: 0;      
+      height: 8px;      
+      background: linear-gradient(90deg, #00f2fe, #4facfe);      
+      border-radius: 10px;      
+      margin: 20px auto;      
+      transition: width 2s ease-in-out;      
+      box-shadow: 0 0 20px #00f2fe;    
+    }      
+
+    .ai-box {      
+      margin: 20px auto;      
+      width: 90%;      
+      max-width: 600px;      
+      background: rgba(20,20,20,0.9);      
+      padding: 15px;      
+      border-radius: 12px;      
+      text-align: left;      
+      box-shadow: 0 0 25px #00f2fe;    
+    }    
+    .ai-box h3 {      
+      color: #00f2fe;      
+      margin-bottom: 8px;      
+      text-shadow: 0 0 15px #00f2fe;    
+    }  
+  </style> 
+</head> 
+<body>   
+  <div class="default-bg" id="defaultBg"></div> <!-- Background image before search -->
+
+  <canvas id="particles"></canvas>   
+  <div class="aurora"></div>   
+  <div class="flash"></div>     
+
+  <header>     
+    <h1><span class="typing">🌌Weather Prediction⛅</span></h1>   
+  </header>     
+
+  <section id="search">     
+    <div class="search-box">       
+      <input type="text" id="city" placeholder="Enter any place...">       
+      <button id="searchBtn">Search</button>       
+      <div id="suggestions"></div>     
+    </div>   
+  </section>     
+
+  <section id="output">     
+    <div id="result"></div>     
+    <div class="progress-bar" id="progress"></div>   
+  </section>     
+
+  <section id="ai-suggestions">     
+    <div class="ai-box" id="activity"></div>     
+    <div class="ai-box" id="eco"></div>     
+    <div class="ai-box" id="commute"></div>     
+    <div class="ai-box" id="alerts"></div>     
+    <div class="ai-box" id="safety"></div>   
+  </section>     
+
+  <script>     
+    const apiKey = "3b239fc9f9c7f697238bf15c503a5667"; // 🔑 Replace with your OpenWeatherMap API key     
+    const searchBtn = document.getElementById("searchBtn");     
+    const input = document.getElementById("city");     
+    const result = document.getElementById("result");     
+    const progress = document.getElementById("progress");     
+    const suggestionsBox = document.getElementById("suggestions");     
+    const canvas = document.getElementById("particles");     
+    const ctx = canvas.getContext("2d");     
+    const flash = document.querySelector(".flash");     
+    const aurora = document.querySelector(".aurora");     
+    const defaultBg = document.getElementById("defaultBg"); // background image element
+
+    canvas.width = window.innerWidth;     
+    canvas.height = window.innerHeight;       
+
+    let particles = [];     
+    let meteors = [];       
+
+    class Particle {       
+      constructor(x, y, size, speedX, speedY, color, twinkle=false) {         
+        this.x = x; this.y = y; this.size = size;         
+        this.speedX = speedX; this.speedY = speedY;         
+        this.color = color; this.alpha = 1; this.twinkle = twinkle;       
+      }       
+      update() {         
+        this.x += this.speedX; this.y += this.speedY;         
+        if (this.y > canvas.height) this.y = 0;         
+        if (this.twinkle) this.alpha = Math.sin(Date.now()/500 + this.x)*0.5+0.5;       
+      }       
+      draw() {         
+        ctx.globalAlpha = this.alpha;         
+        ctx.beginPath();         
+        ctx.arc(this.x, this.y, this.size, 0, Math.PI*2);         
+        ctx.fillStyle = this.color;         
+        ctx.fill();         
+        ctx.globalAlpha = 1;       
+      }     
+    }       
+
+    // 🌠 Updated Meteor class with trail effect
+    class Meteor {       
+      constructor() {         
+        this.x = Math.random() * canvas.width;         
+        this.y = Math.random() * (canvas.height/2);         
+        this.length = Math.random()*80+40;         
+        this.speed = Math.random()*6+4;         
+        this.alpha = 1;         
+        this.trail = []; // store past positions     
+      }       
+      update() {         
+        this.x += this.speed;         
+        this.y += this.speed/2;         
+        this.alpha -= 0.01;         
+        this.trail.push({ x: this.x, y: this.y });         
+        if (this.trail.length > 15) this.trail.shift();     
+      }       
+      draw() {         
+        for (let i = 0; i < this.trail.length; i++) {           
+          let t = this.trail[i];           
+          let opacity = (i / this.trail.length) * this.alpha;           
+          ctx.strokeStyle = `rgba(255,255,255,${opacity})`;           
+          ctx.lineWidth = 2;           
+          ctx.beginPath();           
+          ctx.moveTo(t.x, t.y);           
+          ctx.lineTo(t.x - this.length, t.y - this.length/2);           
+          ctx.stroke();         
+        }         
+        ctx.strokeStyle = `rgba(255,255,255,${this.alpha})`;         
+        ctx.lineWidth = 3;         
+        ctx.beginPath();         
+        ctx.moveTo(this.x, this.y);         
+        ctx.lineTo(this.x - this.length, this.y - this.length/2);         
+        ctx.stroke();       
+      }     
+    }       
+
+    function createParticles(type) {       
+      particles = []; meteors = [];       
+      let color, speedY, size, twinkle=false;       
+      if (type === "stars") {         
+        color="white"; speedY=0.2; size=2; twinkle=true;         
+        setInterval(()=>meteors.push(new Meteor()), 6000); // shooting stars       
+      } else if (type === "rain") { color="#00eaff"; speedY=4; size=2; }       
+      else if (type === "snow") { color="white"; speedY=1; size=3; }       
+      else if (type === "sunny") { color="yellow"; speedY=0.5; size=2; }       
+      else if (type === "cloud") { color="rgba(200,200,200,0.3)"; speedY=0.1; size=50; }       
+      for (let i=0;i<150;i++) {         
+        particles.push(new Particle(           
+          Math.random()*canvas.width, Math.random()*canvas.height,           
+          size, (type==="cloud")?0.1:0,           
+          speedY*Math.random(), color, twinkle         
+        ));       
+      }     
+    }       
+
+    function animateParticles() {       
+      ctx.clearRect(0, 0, canvas.width, canvas.height);       
+      particles.forEach(p => { p.update(); p.draw(); });       
+      meteors.forEach((m,i)=>{         
+        m.update(); m.draw();         
+        if(m.alpha<=0) meteors.splice(i,1);       
+      });       
+      requestAnimationFrame(animateParticles);     
+    }     
+    animateParticles();       
+
+    // 🌌 Show stars until user searches
+    createParticles("stars");
+
+    function flashLightning() {       
+      flash.style.opacity = "1";       
+      setTimeout(()=>flash.style.opacity="0", 200);     
+    }       
+
+    function formatTime(unix, timezone) {       
+      const date = new Date((unix + timezone) * 1000);       
+      return date.toUTCString().match(/(\d{2}:\d{2}:\d{2})/)[0];     
+    }       
+
+    function changeBackground(weather, icon) {       
+      aurora.style.opacity = "0";       
+      if (weather.includes("rain")) createParticles("rain");       
+      else if (weather.includes("snow")) createParticles("snow");       
+      else if (weather.includes("cloud")) createParticles("cloud");       
+      else if (icon.includes("n")) { createParticles("stars"); aurora.style.opacity="0.5"; }       
+      else createParticles("sunny");         
+
+      if (weather.includes("storm")) {         
+        setInterval(flashLightning, 5000);       
+      }     
+    }       
+
+    function showAISuggestions(temp, weather, wind) {       
+      document.getElementById("activity").innerHTML =         
+        `<h3>🎯 Activity</h3>${temp>25?"Perfect for swimming 🏊!":"Great day for a walk 🚶."}`;       
+      document.getElementById("eco").innerHTML =         
+        `<h3>🌱 Eco Tip</h3>${temp<20?"Open windows instead of heater 🌬️.":"Use fans instead of AC ❄️."}`;       
+      document.getElementById("commute").innerHTML =         
+        `<h3>🚲 Commute</h3>${temp<30?"Bike 🚴 or walk 🚶.":"Take public transport 🚌."}`;       
+      document.getElementById("alerts").innerHTML =         
+        `<h3>⚠️ Storm Alert</h3>${wind>10?"Strong winds 🌬️. Stay safe!":"No storm risks ✅."}`;       
+      document.getElementById("safety").innerHTML =         
+        `<h3>🛡️ Safety</h3>${temp>35?"Stay hydrated 💧, avoid heat ☀️.":"Safe conditions 🚀."}`;     
+    }       
+
+    // 🌍 NEW: Universal Weather Lookup     
+    async function getWeather(lat, lon, displayName) {       
+      const url = `https://api.openweathermap.org/data/2.5/weather?lat=${lat}&lon=${lon}&appid=${apiKey}&units=metric`;       
+      try {         
+        const response = await fetch(url);         
+        if (!response.ok) throw new Error("Location not found 😢");         
+        const data = await response.json();         
+        const sunrise = formatTime(data.sys.sunrise, data.timezone);         
+        const sunset = formatTime(data.sys.sunset, data.timezone);           
+
+        result.innerHTML = `           
+          <h2>${displayName}</h2>           
+          <p>🌡️ ${data.main.temp}°C (${data.weather[0].description})</p>           
+          <img src="https://openweathermap.org/img/wn/${data.weather[0].icon}@2x.png">           
+          <div id="extra">             
+            🌅 Sunrise: ${sunrise} <br>             
+            🌇 Sunset: ${sunset} <br>             
+            🤔 Feels like: ${data.main.feels_like}°C <br>             
+            💧 Humidity: ${data.main.humidity}% <br>             
+            💨 Wind: ${data.wind.speed} m/s           
+          </div>         
+        `;         
+        result.classList.add("show");         
+        progress.style.width="100%";         
+        setTimeout(()=>progress.style.width="0",2500);         
+        changeBackground(data.weather[0].description.toLowerCase(), data.weather[0].icon);         
+        showAISuggestions(data.main.temp, data.weather[0].description, data.wind.speed);         
+
+        // Hide default background after first successful search
+        defaultBg.classList.add("hide");  
+
+      } catch (error) {         
+        result.innerHTML = `<p style="color:red">${error.message}</p>`;         
+        result.classList.add("show");       
+      }     
+    }     
+
+    async function getCitySuggestions(query) {       
+      const url = `https://api.openweathermap.org/geo/1.0/direct?q=${query}&
+      &limit=5&appid=${apiKey}`;       
+      try {         
+        const response = await fetch(url);         
+        if (!response.ok) throw new Error("Failed to fetch suggestions");         
+        const cities = await response.json();         
+        suggestionsBox.innerHTML = "";         
+        cities.forEach(city => {           
+          const div = document.createElement("div");           
+          div.textContent = `${city.name}, ${city.state||""}, ${city.country}`;           
+          div.addEventListener("click",()=>{             
+            getWeather(city.lat, city.lon, div.textContent);             
+            suggestionsBox.innerHTML = "";           
+          });           
+          suggestionsBox.appendChild(div);         
+        });       
+      } catch (error) {         
+        console.error(error);       
+      }     
+    }       
+
+    searchBtn.addEventListener("click",()=>{       
+      const city = input.value.trim();       
+      if (city) getCitySuggestions(city);     
+    });       
+
+    input.addEventListener("input",()=>{       
+      const query = input.value.trim();       
+      if (query.length>2) getCitySuggestions(query);       
+      else suggestionsBox.innerHTML = "";     
+    });     
+  </script> 
+</body> 
+</html>
